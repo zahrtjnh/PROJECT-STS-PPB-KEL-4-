@@ -1,0 +1,20 @@
+{
+  "name": "Invenora Inventory System",
+  "short_name": "Invenora",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#061b49",
+  "theme_color": "#061b49",
+  "icons": [
+    {
+      "src": "invenora-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "invenora-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
