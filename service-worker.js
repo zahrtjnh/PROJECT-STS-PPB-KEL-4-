@@ -1,45 +1,42 @@
-const CACHE_NAME = 'invenora-cache-v1';
-const urlsToCache = [
+const CACHE_NAME = 'invenora-v1';
+const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './script.js',
-  './style.css',
   './manifest.json',
-  './invenora-logo.png'
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// Install Service Worker & Cache assets
+// Install Event
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Meng-cache file aplikasi');
-      return cache.addAll(urlsToCache);
+      return cache.addAll(ASSETS_TO_CACHE);
     })
   );
+  self.skipWaiting();
 });
 
-// Fetching assets
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Mengembalikan aset dari cache jika ada, atau mengambil dari jaringan
-      return response || fetch(event.request);
-    })
-  );
-});
-
-// Aktivasi Service Worker & Membersihkan cache lama jika ada update
+// Activate Event
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (!cacheWhitelist.includes(cacheName)) {
-            return caches.delete(cacheName);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            return caches.delete(cache);
           }
         })
       );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch Event (Offline Capability)
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
     })
   );
 });

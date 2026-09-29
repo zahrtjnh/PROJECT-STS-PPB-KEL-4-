@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#061b49">
+  <meta name="description" content="Invenora - Sistem Inventaris Barang">
   
   <!-- Hubungkan Manifest PWA -->
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/boxes-stacked.svg">
   
   <title>Invenora - Sistem Inventaris Barang</title>
   
@@ -241,7 +243,7 @@
       background: var(--surface);
       border-radius: var(--radius);
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      overflow: hidden;
+      overflow-x: auto;
     }
 
     table {
@@ -315,7 +317,7 @@
       background: var(--surface);
       padding: 32px;
       border-radius: var(--radius);
-      width: 100%;
+      width: 90%;
       max-width: 500px;
     }
 
@@ -351,6 +353,19 @@
       gap: 12px;
       margin-top: 24px;
     }
+
+    @media (max-width: 768px) {
+      aside {
+        width: 70px;
+      }
+      .brand span, .nav-links span, .user-profile div {
+        display: none;
+      }
+      main {
+        margin-left: 70px;
+        padding: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -359,14 +374,14 @@
   <aside>
     <div class="brand">
       <i class="fa-solid fa-boxes-stacked"></i>
-      Invenora
+      <span>Invenora</span>
     </div>
     <ul class="nav-links">
-      <li class="active"><a href="#"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
-      <li><a href="#"><i class="fa-solid fa-box"></i> Inventaris Barang</a></li>
-      <li><a href="#"><i class="fa-solid fa-arrow-right-arrow-left"></i> Transaksi</a></li>
-      <li><a href="#"><i class="fa-solid fa-users"></i> Pemasok</a></li>
-      <li><a href="#"><i class="fa-solid fa-gear"></i> Pengaturan</a></li>
+      <li class="active"><a href="#"><i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span></a></li>
+      <li><a href="#"><i class="fa-solid fa-box"></i> <span>Inventaris Barang</span></a></li>
+      <li><a href="#"><i class="fa-solid fa-arrow-right-arrow-left"></i> <span>Transaksi</span></a></li>
+      <li><a href="#"><i class="fa-solid fa-users"></i> <span>Pemasok</span></a></li>
+      <li><a href="#"><i class="fa-solid fa-gear"></i> <span>Pengaturan</span></a></li>
     </ul>
     <div class="user-profile">
       <div class="avatar">A</div>
@@ -426,7 +441,7 @@
     <div class="controls-panel">
       <div class="search-box">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Cari nama barang atau SKU..." onkeyup="renderTable()">
+        <input type="text" id="searchInput" placeholder="Cari nama barang atau SKU..." oninput="renderTable()">
       </div>
     </div>
 
@@ -451,23 +466,23 @@
   </main>
 
   <!-- Modal Tambah Barang -->
-  <div class="modal" id="addModal">
-    <div class="modal-content">
+  <div class="modal" id="addModal" onclick="handleBackdropClick(event, 'addModal')">
+    <div class="modal-content" onclick="event.stopPropagation()">
       <div class="modal-header">
         <h2>Tambah Barang Baru</h2>
         <button class="btn-icon" onclick="closeModal('addModal')"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <form id="addForm" onsubmit="handleAddItem(event)">
         <div class="form-group">
-          <label>Kode SKU</label>
+          <label for="addSku">Kode SKU</label>
           <input type="text" id="addSku" required placeholder="Contoh: INV-001">
         </div>
         <div class="form-group">
-          <label>Nama Barang</label>
+          <label for="addName">Nama Barang</label>
           <input type="text" id="addName" required placeholder="Masukkan nama barang">
         </div>
         <div class="form-group">
-          <label>Kategori</label>
+          <label for="addCategory">Kategori</label>
           <select id="addCategory" required>
             <option value="Elektronik">Elektronik</option>
             <option value="Aksesori">Aksesori</option>
@@ -476,7 +491,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Jumlah Stok Awal</label>
+          <label for="addStock">Jumlah Stok Awal</label>
           <input type="number" id="addStock" min="0" required placeholder="0">
         </div>
         <div class="modal-footer">
@@ -488,7 +503,7 @@
   </div>
 
   <script>
-    // Initial Data Dummy
+    // Data Dummy Awal
     let inventoryData = [
       { id: 1, sku: 'INV-1001', name: 'Laptop Pro 14 Inch', category: 'Elektronik', stock: 12 },
       { id: 2, sku: 'INV-1002', name: 'Mouse Wireless Silent', category: 'Aksesori', stock: 3 },
@@ -498,13 +513,19 @@
 
     function renderTable() {
       const tbody = document.getElementById('inventoryTableBody');
-      const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
       tbody.innerHTML = '';
 
       const filteredData = inventoryData.filter(item => 
         item.name.toLowerCase().includes(searchQuery) || 
         item.sku.toLowerCase().includes(searchQuery)
       );
+
+      if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Tidak ada data yang ditemukan.</td></tr>`;
+        updateStats();
+        return;
+      }
 
       filteredData.forEach(item => {
         let statusBadge = '';
@@ -518,9 +539,9 @@
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${item.sku}</strong></td>
-          <td>${item.name}</td>
-          <td>${item.category}</td>
+          <td><strong>${escapeHtml(item.sku)}</strong></td>
+          <td>${escapeHtml(item.name)}</td>
+          <td>${escapeHtml(item.category)}</td>
           <td>${item.stock}</td>
           <td>${statusBadge}</td>
           <td>
@@ -539,7 +560,7 @@
 
     function updateStats() {
       const totalItems = inventoryData.length;
-      const totalStock = inventoryData.reduce((acc, curr) => acc + curr.stock, 0);
+      const totalStock = inventoryData.reduce((acc, curr) => acc + Number(curr.stock), 0);
       const lowStock = inventoryData.filter(item => item.stock < 5).length;
 
       document.getElementById('stat-total').innerText = totalItems;
@@ -549,10 +570,15 @@
 
     function handleAddItem(e) {
       e.preventDefault();
-      const sku = document.getElementById('addSku').value;
-      const name = document.getElementById('addName').value;
+      const sku = document.getElementById('addSku').value.trim();
+      const name = document.getElementById('addName').value.trim();
       const category = document.getElementById('addCategory').value;
       const stock = parseInt(document.getElementById('addStock').value, 10);
+
+      if (!sku || !name || isNaN(stock) || stock < 0) {
+        alert('Harap isi seluruh data dengan benar!');
+        return;
+      }
 
       const newItem = {
         id: Date.now(),
@@ -565,7 +591,6 @@
       inventoryData.push(newItem);
       renderTable();
       closeModal('addModal');
-      document.getElementById('addForm').reset();
     }
 
     function deleteItem(id) {
@@ -581,19 +606,37 @@
 
     function closeModal(id) {
       document.getElementById(id).style.display = 'none';
+      document.getElementById('addForm').reset();
     }
 
-    // Run Render Table on Page Load
-    document.addEventListener('DOMContentLoaded', renderTable);
+    function handleBackdropClick(event, id) {
+      if (event.target.id === id) {
+        closeModal(id);
+      }
+    }
 
-    // Registrasi Service Worker (Sesuai nama file: service-worker.js)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+    function escapeHtml(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+      );
+    }
+
+    // Inisialisasi Aplikasi & Service Worker
+    document.addEventListener('DOMContentLoaded', () => {
+      renderTable();
+
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('Service Worker terhubung:', reg.scope))
+          .then(reg => console.log('Service Worker berhasil terdaftar:', reg.scope))
           .catch(err => console.error('Gagal mendaftarkan Service Worker:', err));
-      });
-    }
+      }
+    });
   </script>
 </body>
 </html>
